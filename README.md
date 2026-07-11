@@ -1,1 +1,1 @@
-ÿþ# DITLib
+# DITLib
