@@ -1,0 +1,88 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: biblio-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - biblio-network
+
+  livres-service:
+    build: ./livres-service
+    container_name: livres-service
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+    ports:
+      - "8011:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - biblio-network
+
+  utilisateurs-service:
+    build: ./utilisateurs-service
+    container_name: utilisateurs-service
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+    ports:
+      - "8002:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - biblio-network
+
+  emprunts-service:
+    build: ./emprunts-service
+    container_name: emprunts-service
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      LIVRES_SERVICE_URL: http://livres-service:8000
+      UTILISATEURS_SERVICE_URL: http://utilisateurs-service:8000
+    ports:
+      - "8003:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      livres-service:
+        condition: service_started
+      utilisateurs-service:
+        condition: service_started
+    networks:
+      - biblio-network
+
+volumes:
+  mysql_data:
+
+networks:
+  biblio-network:
+    driver: bridge
