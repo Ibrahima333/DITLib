@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from .database import Base, engine, get_db
 
-# Cree les tables dans MySQL au demarrage si elles n'existent pas encore
+# Cree les tables dans PostgreSQL au demarrage si elles n'existent pas encore
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(

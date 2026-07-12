@@ -3,7 +3,7 @@
 Interface React de la plateforme de bibliothèque numérique du DIT (Examen Containers
 et Virtualisation, L2 DIT). C'est une SPA (Single Page Application) qui ne fait que de
 l'affichage et des appels API : toute la logique métier (validation stricte, accès
-MySQL, règles d'emprunt) vit dans les 3 microservices backend. Le frontend consomme
+PostgreSQL, règles d'emprunt) vit dans les 3 microservices backend. Le frontend consomme
 directement leurs API REST, sans passerelle intermédiaire.
 
 ## Stack
@@ -111,7 +111,7 @@ docker run -p 8080:80 ditlib-frontend
 L'application est alors accessible sur `http://localhost:8080`.
 
 Ce service est aussi déclaré dans le `docker-compose.yml` racine : un
-`docker compose up --build` à la racine du projet démarre MySQL, les 3
+`docker compose up --build` à la racine du projet démarre PostgreSQL, les 3
 microservices backend et ce frontend ensemble (5 conteneurs), le frontend
 étant exposé sur le port 8080.
 
