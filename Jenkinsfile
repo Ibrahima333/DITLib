@@ -83,16 +83,17 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 withCredentials([file(credentialsId: 'ditlib-env-file', variable: 'ENV_FILE')]) {
-                    sh 'cp "$ENV_FILE" .env'
+                    sh 'docker compose --env-file "$ENV_FILE" build'
                 }
-                sh 'docker compose build'
             }
         }
 
         stage('Deploy') {
             steps {
                 sh 'docker compose down'
-                sh 'docker compose up -d'
+                withCredentials([file(credentialsId: 'ditlib-env-file', variable: 'ENV_FILE')]) {
+                    sh 'docker compose --env-file "$ENV_FILE" up -d'
+                }
             }
         }
 
