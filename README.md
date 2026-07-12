@@ -1,7 +1,7 @@
 # Bibliotheque Numerique Microservices
 
 Projet **Bibliotheque Numerique Microservices** (Examen Containers et Virtualisation,
-L2 DIT) : 3 microservices backend FastAPI, une base de donnees MySQL, un frontend React,
+L2 DIT) : 3 microservices backend FastAPI, une base de donnees PostgreSQL, un frontend React,
 le tout conteneurise et orchestre avec Docker Compose.
 
 ## Architecture
@@ -26,7 +26,7 @@ le tout conteneurise et orchestre avec Docker Compose.
                                    └───────────┬───────────┘
                                                ▼
                                       ┌─────────────────┐
-                                      │   MySQL 8.0      │  :3306
+                                      │   PostgreSQL 16  │  :5432
                                       │  bibliotheque_db │
                                       └─────────────────┘
 ```
@@ -34,7 +34,7 @@ le tout conteneurise et orchestre avec Docker Compose.
 Chaque microservice backend est une application **FastAPI** independante avec son
 propre `Dockerfile`, exposee sur un port different, et communique avec les autres
 services via des appels **API REST** (HTTP). Les 3 services partagent une meme
-instance MySQL mais chacun ne gere que ses propres tables (`livres`, `utilisateurs`,
+instance PostgreSQL mais chacun ne gere que ses propres tables (`livres`, `utilisateurs`,
 `emprunts`). Le frontend est une SPA React servie par Nginx : elle tourne dans le
 navigateur et appelle chaque microservice directement (pas via `emprunts-service`),
 en resolvant elle-meme les titres de livres et noms d'utilisateurs pour l'affichage
@@ -53,7 +53,7 @@ Prerequis : Docker et Docker Compose installes.
 
 ```bash
 cp .env.example .env
-# ajuster les identifiants MySQL dans .env si besoin
+# ajuster les identifiants PostgreSQL dans .env si besoin
 ```
 
 ## Lancement avec Docker Compose
@@ -63,7 +63,7 @@ docker compose up --build
 ```
 
 Cela demarre 5 conteneurs :
-- `biblio-mysql` (MySQL 8.0)
+- `biblio-postgres` (PostgreSQL 16)
 - `livres-service` sur http://localhost:8011
 - `utilisateurs-service` sur http://localhost:8002
 - `emprunts-service` sur http://localhost:8003
@@ -78,7 +78,7 @@ Pour arreter :
 docker compose down
 ```
 
-Pour tout arreter et supprimer les donnees MySQL :
+Pour tout arreter et supprimer les donnees PostgreSQL :
 
 ```bash
 docker compose down -v
@@ -96,7 +96,7 @@ DITLib/
 │   ├── requirements.txt
 │   └── app/
 │       ├── main.py         # routes FastAPI
-│       ├── database.py     # connexion SQLAlchemy / MySQL
+│       ├── database.py     # connexion SQLAlchemy / PostgreSQL
 │       ├── models.py       # modele ORM Livre
 │       └── schemas.py      # schemas Pydantic
 ├── utilisateurs-service/
