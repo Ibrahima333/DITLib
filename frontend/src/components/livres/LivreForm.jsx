@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const emptyForm = { titre: '', auteur: '', isbn: '', quantite: 1 }
+const emptyForm = { titre: '', auteur: '', isbn: '', quantite_totale: 1 }
 
 function validate(form) {
   const errors = {}
@@ -9,19 +9,28 @@ function validate(form) {
   if (!/^[0-9-]{10,17}$/.test(form.isbn.trim())) {
     errors.isbn = 'ISBN invalide (10 à 13 chiffres, tirets autorisés).'
   }
-  if (!Number.isInteger(form.quantite) || form.quantite < 0) {
-    errors.quantite = 'La quantité doit être un entier positif.'
+  if (!Number.isInteger(form.quantite_totale) || form.quantite_totale < 0) {
+    errors.quantite_totale = 'La quantité doit être un entier positif.'
   }
   return errors
 }
 
 export default function LivreForm({ initialValue, onSubmit, onCancel, submitting }) {
-  const [form, setForm] = useState(initialValue ?? emptyForm)
+  const [form, setForm] = useState(
+    initialValue
+      ? {
+          titre: initialValue.titre,
+          auteur: initialValue.auteur,
+          isbn: initialValue.isbn,
+          quantite_totale: initialValue.quantite_totale,
+        }
+      : emptyForm,
+  )
   const [errors, setErrors] = useState({})
 
   function handleChange(e) {
     const { name, value } = e.target
-    setForm((f) => ({ ...f, [name]: name === 'quantite' ? Number(value) : value }))
+    setForm((f) => ({ ...f, [name]: name === 'quantite_totale' ? Number(value) : value }))
     setErrors((errs) => ({ ...errs, [name]: undefined }))
   }
 
@@ -66,17 +75,19 @@ export default function LivreForm({ initialValue, onSubmit, onCancel, submitting
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
-          Quantité
+          Quantité totale
         </label>
         <input
           type="number"
           min="0"
-          name="quantite"
-          value={form.quantite}
+          name="quantite_totale"
+          value={form.quantite_totale}
           onChange={handleChange}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
-        {errors.quantite && <p className="mt-1 text-xs text-red-600">{errors.quantite}</p>}
+        {errors.quantite_totale && (
+          <p className="mt-1 text-xs text-red-600">{errors.quantite_totale}</p>
+        )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <button

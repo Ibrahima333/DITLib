@@ -6,9 +6,7 @@ export const livresApi = {
   getById: (id) => livresClient.get(`/livres/${id}`).then((res) => res.data),
 
   search: (query) =>
-    livresClient
-      .get('/livres/recherche', { params: { q: query } })
-      .then((res) => res.data),
+    livresClient.get('/livres', { params: { q: query } }).then((res) => res.data),
 
   create: (livre) => livresClient.post('/livres', livre).then((res) => res.data),
 

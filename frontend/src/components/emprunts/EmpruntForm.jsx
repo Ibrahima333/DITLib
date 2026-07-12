@@ -7,6 +7,7 @@ export default function EmpruntForm({ onSubmit, onCancel, submitting }) {
   const [utilisateurs, setUtilisateurs] = useState([])
   const [livreId, setLivreId] = useState('')
   const [utilisateurId, setUtilisateurId] = useState('')
+  const [dureeJours, setDureeJours] = useState(14)
 
   useEffect(() => {
     livresApi.getAll().then(setLivres).catch(() => setLivres([]))
@@ -15,7 +16,11 @@ export default function EmpruntForm({ onSubmit, onCancel, submitting }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    onSubmit({ livreId, utilisateurId })
+    onSubmit({
+      livreId: Number(livreId),
+      utilisateurId: Number(utilisateurId),
+      dureeJours: Number(dureeJours),
+    })
   }
 
   return (
@@ -32,8 +37,9 @@ export default function EmpruntForm({ onSubmit, onCancel, submitting }) {
             Sélectionner un livre
           </option>
           {livres.map((livre) => (
-            <option key={livre.id} value={livre.id}>
-              {livre.titre} — {livre.auteur}
+            <option key={livre.id} value={livre.id} disabled={livre.quantite_disponible < 1}>
+              {livre.titre} — {livre.auteur} ({livre.quantite_disponible} disponible
+              {livre.quantite_disponible > 1 ? 's' : ''})
             </option>
           ))}
         </select>
@@ -57,6 +63,20 @@ export default function EmpruntForm({ onSubmit, onCancel, submitting }) {
             </option>
           ))}
         </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Durée (jours)
+        </label>
+        <input
+          type="number"
+          min="1"
+          max="90"
+          value={dureeJours}
+          onChange={(e) => setDureeJours(e.target.value)}
+          required
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        />
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <button

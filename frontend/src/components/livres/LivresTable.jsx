@@ -19,7 +19,8 @@ export default function LivresTable({ livres, onEdit, onDelete }) {
             <th className="px-4 py-3 font-medium">Titre</th>
             <th className="px-4 py-3 font-medium">Auteur</th>
             <th className="px-4 py-3 font-medium">ISBN</th>
-            <th className="px-4 py-3 font-medium">Quantité</th>
+            <th className="px-4 py-3 font-medium">Disponible</th>
+            <th className="px-4 py-3 font-medium">Total</th>
             <th className="px-4 py-3 font-medium text-right">Actions</th>
           </tr>
         </thead>
@@ -29,7 +30,18 @@ export default function LivresTable({ livres, onEdit, onDelete }) {
               <td className="px-4 py-3 font-medium text-slate-800">{livre.titre}</td>
               <td className="px-4 py-3 text-slate-600">{livre.auteur}</td>
               <td className="px-4 py-3 text-slate-600">{livre.isbn}</td>
-              <td className="px-4 py-3 text-slate-600">{livre.quantite}</td>
+              <td className="px-4 py-3">
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    livre.quantite_disponible > 0
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-red-50 text-red-700'
+                  }`}
+                >
+                  {livre.quantite_disponible}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-slate-600">{livre.quantite_totale}</td>
               <td className="px-4 py-3">
                 <div className="flex justify-end gap-2">
                   <button

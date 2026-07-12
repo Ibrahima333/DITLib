@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { typeLabels } from '../../constants/utilisateurTypes'
 
-const emptyForm = { nom: '', prenom: '', email: '', type: 'ETUDIANT' }
+const emptyForm = { nom: '', prenom: '', email: '', type_utilisateur: 'ETUDIANT' }
 
 function validate(form) {
   const errors = {}
@@ -13,8 +13,8 @@ function validate(form) {
   return errors
 }
 
-export default function UtilisateurForm({ initialValue, onSubmit, onCancel, submitting }) {
-  const [form, setForm] = useState(initialValue ?? emptyForm)
+export default function UtilisateurForm({ onSubmit, onCancel, submitting }) {
+  const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
 
   function handleChange(e) {
@@ -69,8 +69,8 @@ export default function UtilisateurForm({ initialValue, onSubmit, onCancel, subm
           Type d'utilisateur
         </label>
         <select
-          name="type"
-          value={form.type}
+          name="type_utilisateur"
+          value={form.type_utilisateur}
           onChange={handleChange}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         >

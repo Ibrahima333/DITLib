@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { empruntsApi } from '../../api/empruntsApi'
+import { enrichEmprunts } from '../../utils/enrichEmprunts'
 import EmpruntsTable from '../../components/emprunts/EmpruntsTable'
 import EmpruntForm from '../../components/emprunts/EmpruntForm'
 import Modal from '../../components/ui/Modal'
@@ -19,6 +20,7 @@ export default function EmpruntsPage() {
     setError(null)
     empruntsApi
       .getAll()
+      .then((data) => enrichEmprunts(data))
       .then(setEmprunts)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -26,6 +28,7 @@ export default function EmpruntsPage() {
 
   useEffect(() => {
     loadEmprunts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only
   }, [])
 
   async function handleSubmit(form) {

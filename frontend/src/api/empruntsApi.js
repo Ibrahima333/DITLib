@@ -1,18 +1,25 @@
 import { empruntsClient } from './client'
 
 export const empruntsApi = {
-  getAll: () => empruntsClient.get('/emprunts').then((res) => res.data),
+  getAll: (utilisateurId) =>
+    empruntsClient
+      .get('/emprunts', { params: { utilisateur_id: utilisateurId } })
+      .then((res) => res.data),
 
-  emprunter: (data) =>
-    empruntsClient.post('/emprunts', data).then((res) => res.data),
+  emprunter: ({ livreId, utilisateurId, dureeJours }) =>
+    empruntsClient
+      .post('/emprunts', {
+        livre_id: livreId,
+        utilisateur_id: utilisateurId,
+        duree_jours: dureeJours ?? 14,
+      })
+      .then((res) => res.data),
 
   retourner: (id) =>
-    empruntsClient
-      .put(`/emprunts/${id}/retour`)
-      .then((res) => res.data),
+    empruntsClient.post(`/emprunts/${id}/retour`).then((res) => res.data),
 
   historique: (utilisateurId) =>
     empruntsClient
-      .get(`/emprunts/historique/${utilisateurId}`)
+      .get('/emprunts', { params: { utilisateur_id: utilisateurId } })
       .then((res) => res.data),
 }

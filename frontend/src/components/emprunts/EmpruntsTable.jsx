@@ -1,5 +1,6 @@
 import { Undo2 } from 'lucide-react'
 import EmptyState from '../ui/EmptyState'
+import { formatDate } from '../../utils/formatDate'
 
 export default function EmpruntsTable({ emprunts, onRetourner }) {
   if (emprunts.length === 0) {
@@ -19,6 +20,7 @@ export default function EmpruntsTable({ emprunts, onRetourner }) {
             <th className="px-4 py-3 font-medium">Livre</th>
             <th className="px-4 py-3 font-medium">Utilisateur</th>
             <th className="px-4 py-3 font-medium">Date d'emprunt</th>
+            <th className="px-4 py-3 font-medium">Retour prévu</th>
             <th className="px-4 py-3 font-medium">Statut</th>
             <th className="px-4 py-3 font-medium text-right">Actions</th>
           </tr>
@@ -27,25 +29,28 @@ export default function EmpruntsTable({ emprunts, onRetourner }) {
           {emprunts.map((emprunt) => (
             <tr key={emprunt.id} className="hover:bg-slate-50">
               <td className="px-4 py-3 font-medium text-slate-800">
-                {emprunt.livreTitre ?? emprunt.livreId}
+                {emprunt.livreTitre ?? `Livre #${emprunt.livre_id}`}
               </td>
               <td className="px-4 py-3 text-slate-600">
-                {emprunt.utilisateurNom ?? emprunt.utilisateurId}
+                {emprunt.utilisateurNom ?? `Utilisateur #${emprunt.utilisateur_id}`}
               </td>
-              <td className="px-4 py-3 text-slate-600">{emprunt.dateEmprunt}</td>
+              <td className="px-4 py-3 text-slate-600">{formatDate(emprunt.date_emprunt)}</td>
+              <td className="px-4 py-3 text-slate-600">
+                {formatDate(emprunt.date_retour_prevue)}
+              </td>
               <td className="px-4 py-3">
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    emprunt.dateRetour
+                    emprunt.statut === 'RETOURNE'
                       ? 'bg-slate-100 text-slate-600'
                       : 'bg-amber-50 text-amber-700'
                   }`}
                 >
-                  {emprunt.dateRetour ? 'Retourné' : 'En cours'}
+                  {emprunt.statut === 'RETOURNE' ? 'Retourné' : 'En cours'}
                 </span>
               </td>
               <td className="px-4 py-3 text-right">
-                {!emprunt.dateRetour && (
+                {emprunt.statut !== 'RETOURNE' && (
                   <button
                     onClick={() => onRetourner(emprunt)}
                     className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100 hover:text-emerald-600"

@@ -1,41 +1,48 @@
-# Bibliotheque Numerique - Backend & Base de donnees
+# Bibliotheque Numerique Microservices
 
-Partie backend du projet **Bibliotheque Numerique Microservices** (Examen Containers et
-Virtualisation, L2 DIT). Cette partie couvre les 3 microservices metier, la base de
-donnees MySQL et leur conteneurisation. Le frontend est developpe separement et
-consommera ces APIs.
+Projet **Bibliotheque Numerique Microservices** (Examen Containers et Virtualisation,
+L2 DIT) : 3 microservices backend FastAPI, une base de donnees MySQL, un frontend React,
+le tout conteneurise et orchestre avec Docker Compose.
 
 ## Architecture
 
 ```
-                         ┌─────────────────────┐
-                         │   emprunts-service   │  :8003
-                         │  (orchestrateur des  │
-                         │   emprunts, appelle  │
-                         │  les 2 autres en REST)│
-                         └───────┬───────┬───────┘
-                    REST         │       │        REST
-              ┌──────────────────┘       └──────────────────┐
-              ▼                                              ▼
+                              ┌─────────────────────┐
+                              │   frontend (React)   │  :8080
+                              │   (appele depuis le   │
+                              │       navigateur)     │
+                              └───────┬───────┬───────┘
+                         REST         │       │        REST
+                    ┌──────────────────┘       └──────────────────┐
+                    ▼                                              ▼
     ┌───────────────────┐                          ┌───────────────────────┐
     │  livres-service    │  :8011                   │  utilisateurs-service │  :8002
     └─────────┬──────────┘                          └───────────┬───────────┘
-              │                                                 │
-              └───────────────────────┬─────────────────────────┘
-                                       ▼
-                              ┌─────────────────┐
-                              │   MySQL 8.0      │  :3306
-                              │  bibliotheque_db │
-                              └─────────────────┘
+              │                    ┌─────────────────────┐       │
+              │                    │   emprunts-service   │:8003 │
+              │                    │  (orchestrateur des  │       │
+              └───────────────────►│   emprunts, appelle  │◄──────┘
+                                   │  les 2 autres en REST)│
+                                   └───────────┬───────────┘
+                                               ▼
+                                      ┌─────────────────┐
+                                      │   MySQL 8.0      │  :3306
+                                      │  bibliotheque_db │
+                                      └─────────────────┘
 ```
 
-Chaque microservice est une application **FastAPI** independante avec son propre
-`Dockerfile`, exposee sur un port different, et communique avec les autres services
-via des appels **API REST** (HTTP). Les 3 services partagent une meme instance MySQL
-mais chacun ne gere que ses propres tables (`livres`, `utilisateurs`, `emprunts`).
+Chaque microservice backend est une application **FastAPI** independante avec son
+propre `Dockerfile`, exposee sur un port different, et communique avec les autres
+services via des appels **API REST** (HTTP). Les 3 services partagent une meme
+instance MySQL mais chacun ne gere que ses propres tables (`livres`, `utilisateurs`,
+`emprunts`). Le frontend est une SPA React servie par Nginx : elle tourne dans le
+navigateur et appelle chaque microservice directement (pas via `emprunts-service`),
+en resolvant elle-meme les titres de livres et noms d'utilisateurs pour l'affichage
+des emprunts.
 
-| Microservice | Port | Responsabilite |
+| Service | Port | Responsabilite |
 |---|---|---|
+| `frontend` | 8080 | Interface web React (Livres, Utilisateurs, Emprunts) |
 | `livres-service` | 8011 | CRUD livres, recherche titre/auteur/ISBN, gestion du stock disponible |
 | `utilisateurs-service` | 8002 | Creation/liste des utilisateurs, types (Etudiant, Professeur, Personnel administratif), profil |
 | `emprunts-service` | 8003 | Emprunter/retourner un livre, historique des emprunts (appelle les 2 autres services) |
@@ -45,7 +52,6 @@ mais chacun ne gere que ses propres tables (`livres`, `utilisateurs`, `emprunts`
 Prerequis : Docker et Docker Compose installes.
 
 ```bash
-cd backend
 cp .env.example .env
 # ajuster les identifiants MySQL dans .env si besoin
 ```
@@ -56,14 +62,15 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Cela demarre 4 conteneurs :
+Cela demarre 5 conteneurs :
 - `biblio-mysql` (MySQL 8.0)
 - `livres-service` sur http://localhost:8011
 - `utilisateurs-service` sur http://localhost:8002
 - `emprunts-service` sur http://localhost:8003
+- `biblio-frontend` sur http://localhost:8080
 
-Chaque service expose une documentation Swagger interactive sur `/docs`
-(ex: http://localhost:8011/docs) et un endpoint de sante sur `/health`.
+Chaque microservice backend expose une documentation Swagger interactive sur
+`/docs` (ex: http://localhost:8011/docs) et un endpoint de sante sur `/health`.
 
 Pour arreter :
 
@@ -80,9 +87,10 @@ docker compose down -v
 ## Structure du projet
 
 ```
-backend/
+DITLib/
 ├── docker-compose.yml
 ├── .env.example
+├── frontend/                # SPA React (voir frontend/README.md)
 ├── livres-service/
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -121,9 +129,9 @@ backend/
 - `POST /emprunts/{id}/retour` - retourner un livre
 - `GET /emprunts?utilisateur_id=...` - historique des emprunts
 
-> **Note pour l'integration frontend** : par design microservices, chaque service ne
+> **Note sur l'integration frontend** : par design microservices, chaque service ne
 > connait que ses propres donnees. Un emprunt renvoie uniquement `livre_id` et
-> `utilisateur_id` (pas le titre du livre ni le nom de l'utilisateur). Le frontend doit
-> appeler `livres-service` et `utilisateurs-service` separement (`GET /livres/{id}`,
+> `utilisateur_id` (pas le titre du livre ni le nom de l'utilisateur). Le frontend
+> appelle `livres-service` et `utilisateurs-service` separement (`GET /livres/{id}`,
 > `GET /utilisateurs/{id}`) pour resoudre ces identifiants et assembler l'affichage
-> cote client.
+> cote client (voir `frontend/src/utils/enrichEmprunts.js`).

@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { utilisateursApi } from '../../api/utilisateursApi'
 import { empruntsApi } from '../../api/empruntsApi'
+import { enrichEmprunts } from '../../utils/enrichEmprunts'
+import { formatDate } from '../../utils/formatDate'
 import { typeLabels } from '../../constants/utilisateurTypes'
 import Spinner from '../../components/ui/Spinner'
 import ErrorBanner from '../../components/ui/ErrorBanner'
@@ -19,12 +21,15 @@ export default function UtilisateurProfilPage() {
     setLoading(true)
     setError(null)
     Promise.all([utilisateursApi.getById(id), empruntsApi.historique(id)])
-      .then(([utilisateurData, historiqueData]) => {
-        setUtilisateur(utilisateurData)
-        setHistorique(historiqueData)
-      })
+      .then(([utilisateurData, historiqueData]) =>
+        enrichEmprunts(historiqueData, { includeUtilisateur: false }).then((enriched) => {
+          setUtilisateur(utilisateurData)
+          setHistorique(enriched)
+        }),
+      )
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when id changes
   }, [id])
 
   if (loading) return <Spinner />
@@ -48,7 +53,7 @@ export default function UtilisateurProfilPage() {
           </h1>
           <p className="mt-1 text-slate-500">{utilisateur.email}</p>
           <span className="mt-3 inline-block rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
-            {typeLabels[utilisateur.type] ?? utilisateur.type}
+            {typeLabels[utilisateur.type_utilisateur] ?? utilisateur.type_utilisateur}
           </span>
         </div>
       )}
@@ -74,21 +79,23 @@ export default function UtilisateurProfilPage() {
                 {historique.map((emprunt) => (
                   <tr key={emprunt.id}>
                     <td className="px-4 py-3 font-medium text-slate-800">
-                      {emprunt.livreTitre ?? emprunt.livreId}
+                      {emprunt.livreTitre ?? `Livre #${emprunt.livre_id}`}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{emprunt.dateEmprunt}</td>
                     <td className="px-4 py-3 text-slate-600">
-                      {emprunt.dateRetour ?? '—'}
+                      {formatDate(emprunt.date_emprunt)}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {formatDate(emprunt.date_retour_effective)}
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          emprunt.dateRetour
+                          emprunt.statut === 'RETOURNE'
                             ? 'bg-slate-100 text-slate-600'
                             : 'bg-amber-50 text-amber-700'
                         }`}
                       >
-                        {emprunt.dateRetour ? 'Retourné' : 'En cours'}
+                        {emprunt.statut === 'RETOURNE' ? 'Retourné' : 'En cours'}
                       </span>
                     </td>
                   </tr>
