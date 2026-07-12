@@ -1,0 +1,27 @@
+name: ditlib-jenkins
+
+services:
+  jenkins:
+    build: ./jenkins
+    container_name: ditlib-jenkins
+    restart: unless-stopped
+    user: root
+    ports:
+      - "8090:8080"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Decommenter pour tester le pipeline en local sans pousser sur GitHub
+      # (voir README.md, section "Configuration du job") :
+      # - .:/workspace/DITLib:ro
+    # environment:
+    #   JAVA_OPTS: -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true
+    networks:
+      - biblio-network
+
+volumes:
+  jenkins_home:
+
+networks:
+  biblio-network:
+    external: true

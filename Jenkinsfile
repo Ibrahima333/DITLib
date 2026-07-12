@@ -101,10 +101,10 @@ pipeline {
             steps {
                 sh '''
                     for i in $(seq 1 30); do
-                        if curl -sf http://localhost:8011/health \
-                            && curl -sf http://localhost:8002/health \
-                            && curl -sf http://localhost:8003/health \
-                            && curl -sf http://localhost:8080/ > /dev/null; then
+                        if curl -sf http://livres-service:8000/health \
+                            && curl -sf http://utilisateurs-service:8000/health \
+                            && curl -sf http://emprunts-service:8000/health \
+                            && curl -sf http://frontend/ > /dev/null; then
                             echo "Tous les services sont up"
                             exit 0
                         fi

@@ -102,4 +102,5 @@ volumes:
 
 networks:
   biblio-network:
+    name: biblio-network
     driver: bridge

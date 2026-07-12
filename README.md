@@ -105,31 +105,32 @@ Le pipeline est defini dans le `Jenkinsfile` a la racine. Il enchaine :
 
 ### Lancer Jenkins en local
 
+Jenkins est defini dans `docker-compose.jenkins.yml`, un fichier compose
+separe du principal (le pipeline fait `docker compose down`/`up` sur
+`docker-compose.yml` pour deployer l'appli ; si Jenkins etait dans ce meme
+fichier, ce `down` le couperait lui-meme en plein build).
+
 ```bash
-docker build -t ditlib-jenkins ./jenkins
-docker volume create jenkins_home
-docker run -d --name ditlib-jenkins \
-  --network host \
-  -e JENKINS_OPTS="--httpPort=8090" \
-  -v jenkins_home:/var/jenkins_home \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  --group-add "$(stat -c '%g' /var/run/docker.sock)" \
-  ditlib-jenkins
+docker compose up --build -d          # 1. l'appli d'abord (cree le reseau biblio-network)
+docker compose -f docker-compose.jenkins.yml up --build -d   # 2. puis Jenkins
 ```
 
-Jenkins est servi sur `http://localhost:8090` (le port 8080 est deja pris par
-le frontend). Mot de passe initial :
+Jenkins est servi sur `http://localhost:8090`. Mot de passe initial :
 `docker exec ditlib-jenkins cat /var/jenkins_home/secrets/initialAdminPassword`.
 
-**`--network host` est indispensable** : Jenkins tourne dans un conteneur qui
-pilote le Docker de l'hote via le socket monte (`/var/run/docker.sock`), mais
-les conteneurs de l'application (`docker compose up`) sont alors des
-conteneurs *freres*, pas des enfants de Jenkins — ils publient leurs ports sur
-l'hote, pas dans le namespace reseau du conteneur Jenkins. Sans
-`--network host`, le stage Smoke Test (qui fait `curl http://localhost:8011/...`
-depuis l'interieur du conteneur Jenkins) ne peut pas les joindre. Avec
-`--network host`, `-p` n'a plus d'effet, d'ou le port HTTP de Jenkins
-reconfigure via `JENKINS_OPTS="--httpPort=8090"` plutot qu'un mapping `-p`.
+Cette commande fonctionne a l'identique sur Linux, macOS et Windows (Docker
+Desktop) : le conteneur Jenkins rejoint le reseau `biblio-network` (declare
+`external: true`, cree par le compose principal) et peut donc joindre les
+autres services par leur nom (`http://livres-service:8000/health`, etc.),
+comme le fait deja `emprunts-service` — c'est ce que fait le stage Smoke Test
+du `Jenkinsfile`. Pas besoin de `--network host` (specifique a Linux et
+inutile sous Docker Desktop) ni d'exposer les ports du conteneur pour ca.
+
+Le socket Docker de l'hote est monte dans le conteneur (`/var/run/docker.sock`)
+pour que Jenkins puisse piloter `docker compose build/up/down` ; le service
+tourne en `user: root` pour eviter d'avoir a faire correspondre le GID du
+socket (`stat -c '%g' ...` n'existe pas sous Windows) a un utilisateur du
+conteneur.
 
 ### Configuration du job (une seule fois)
 
@@ -138,12 +139,10 @@ reconfigure via `JENKINS_OPTS="--httpPort=8090"` plutot qu'un mapping `-p`.
 2. Creer un item **Pipeline** nomme `ditlib`, "Pipeline script from SCM",
    pointer vers le depot GitHub et la branche a builder, Script Path =
    `Jenkinsfile`.
-   - Pour tester en local sans pousser sur GitHub : monter le repo dans le
-     conteneur Jenkins (`-v "$(pwd)":/workspace/DITLib:ro`), utiliser l'URL
-     `file:///workspace/DITLib`, et ajouter
-     `-e JAVA_OPTS="-Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"`
-     au lancement du conteneur (Jenkins refuse les checkouts Git locaux par
-     defaut, par securite).
+   - Pour tester en local sans pousser sur GitHub : decommenter le bind
+     mount et la variable `JAVA_OPTS` dans `docker-compose.jenkins.yml`,
+     puis utiliser l'URL `file:///workspace/DITLib` (Jenkins refuse les
+     checkouts Git locaux par defaut, par securite, d'ou `JAVA_OPTS`).
 3. "Build Now" pour declencher un run.
 
 Jenkins tourne sur la meme machine que le deploiement : le socket Docker de
