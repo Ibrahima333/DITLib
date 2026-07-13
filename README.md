@@ -115,8 +115,14 @@ docker compose up --build -d          # 1. l'appli d'abord (cree le reseau bibli
 docker compose -f docker-compose.jenkins.yml up --build -d   # 2. puis Jenkins
 ```
 
-Jenkins est servi sur `http://localhost:8090`. Mot de passe initial :
-`docker exec ditlib-jenkins cat /var/jenkins_home/secrets/initialAdminPassword`.
+Jenkins est servi sur `http://localhost:8090`. Le compte admin est cree
+automatiquement au demarrage via Configuration as Code (`jenkins/casc.yaml`,
+`CASC_JENKINS_CONFIG`) : plus d'assistant de configuration initiale ni
+d'installation manuelle des plugins (ils sont installes a l'image, voir
+`jenkins/plugins.txt`). Identifiants pris dans `.env` a la racine
+(`JENKINS_ADMIN_ID` / `JENKINS_ADMIN_PASSWORD`, voir `.env.example`) — a
+definir avant le premier `docker compose -f docker-compose.jenkins.yml up`,
+sinon le conteneur refuse de demarrer (`JENKINS_ADMIN_PASSWORD` obligatoire).
 
 Cette commande fonctionne a l'identique sur Linux, macOS et Windows (Docker
 Desktop) : le conteneur Jenkins rejoint le reseau `biblio-network` (declare
@@ -155,11 +161,15 @@ distant ni SSH.
 ```
 DITLib/
 ├── docker-compose.yml
+├── docker-compose.jenkins.yml   # Jenkins, separe du compose principal (voir plus haut)
+├── Jenkinsfile                  # pipeline declaratif (test, build, deploy, smoke test)
+├── jenkins/                     # image Jenkins locale (Dockerfile, plugins.txt, casc.yaml)
 ├── .env.example
 ├── frontend/                # SPA React (voir frontend/README.md)
 ├── livres-service/
 │   ├── Dockerfile
 │   ├── requirements.txt
+│   ├── tests/               # pytest (base SQLite en memoire, TESTING=1)
 │   └── app/
 │       ├── main.py         # routes FastAPI
 │       ├── database.py     # connexion SQLAlchemy / PostgreSQL
@@ -168,6 +178,7 @@ DITLib/
 ├── utilisateurs-service/
 │   └── ...                 # meme structure (modele Utilisateur)
 └── emprunts-service/
+    ├── tests/
     └── app/
         ├── main.py
         ├── clients.py       # appels REST vers livres-service / utilisateurs-service
@@ -194,6 +205,7 @@ DITLib/
 - `POST /emprunts` - emprunter un livre (verifie livre + utilisateur, decremente le stock)
 - `POST /emprunts/{id}/retour` - retourner un livre
 - `GET /emprunts?utilisateur_id=...` - historique des emprunts
+- `GET /emprunts/{id}` - detail d'un emprunt
 
 > **Note sur l'integration frontend** : par design microservices, chaque service ne
 > connait que ses propres donnees. Un emprunt renvoie uniquement `livre_id` et

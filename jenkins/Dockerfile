@@ -27,3 +27,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && rm -rf /var/lib/apt/lists/*
 
 USER jenkins
+
+# Plugins + Configuration as Code (voir casc.yaml) : evite de refaire a la
+# main l'assistant de configuration initiale (mot de passe admin, choix des
+# plugins) a chaque nouveau volume jenkins_home.
+COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
