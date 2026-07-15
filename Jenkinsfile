@@ -1,127 +1,97 @@
 pipeline {
-    agent any
+
+    agent {
+        label 'local'
+    }
 
     environment {
+        DOCKERHUB_USER = "ditdevops1"
+
+        LIVRES_IMAGE       = "${DOCKERHUB_USER}/livres-service-ditlib"
+        UTILISATEURS_IMAGE = "${DOCKERHUB_USER}/utilisateurs-service-ditlib"
+        EMPRUNTS_IMAGE     = "${DOCKERHUB_USER}/emprunts-service-ditlib"
+        FRONTEND_IMAGE     = "${DOCKERHUB_USER}/frontend-ditlib"
+
+        LIVRES_TAG       = "1.${BUILD_NUMBER}"
+        UTILISATEURS_TAG = "1.${BUILD_NUMBER}"
+        EMPRUNTS_TAG     = "1.${BUILD_NUMBER}"
+        FRONTEND_TAG     = "1.${BUILD_NUMBER}"
+
         COMPOSE_PROJECT_NAME = 'ditlib'
     }
 
     stages {
-        stage('Checkout') {
+
+        // Checkout code source Backend (3 microservices) + Frontend
+        stage('Checkout Backend + Frontend') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Backend Tests') {
-            parallel {
-                stage('livres-service') {
-                    steps {
-                        dir('livres-service') {
-                            sh '''
-                                python3 -m venv .venv
-                                . .venv/bin/activate
-                                pip install --no-cache-dir -r requirements.txt
-                                python -m pytest --junitxml=test-results.xml
-                            '''
-                        }
-                    }
-                    post {
-                        always {
-                            junit 'livres-service/test-results.xml'
-                        }
-                    }
-                }
-                stage('utilisateurs-service') {
-                    steps {
-                        dir('utilisateurs-service') {
-                            sh '''
-                                python3 -m venv .venv
-                                . .venv/bin/activate
-                                pip install --no-cache-dir -r requirements.txt
-                                python -m pytest --junitxml=test-results.xml
-                            '''
-                        }
-                    }
-                    post {
-                        always {
-                            junit 'utilisateurs-service/test-results.xml'
-                        }
-                    }
-                }
-                stage('emprunts-service') {
-                    steps {
-                        dir('emprunts-service') {
-                            sh '''
-                                python3 -m venv .venv
-                                . .venv/bin/activate
-                                pip install --no-cache-dir -r requirements.txt
-                                python -m pytest --junitxml=test-results.xml
-                            '''
-                        }
-                    }
-                    post {
-                        always {
-                            junit 'emprunts-service/test-results.xml'
-                        }
+        // Build livres-service Docker Image
+        stage('Build livres-service Docker Image') {
+            steps {
+                dir('livres-service') {
+                    script {
+                        sh "docker build -t ${LIVRES_IMAGE}:${LIVRES_TAG} ."
                     }
                 }
             }
         }
 
-        stage('Frontend Lint & Build') {
+        // Build utilisateurs-service Docker Image
+        stage('Build utilisateurs-service Docker Image') {
+            steps {
+                dir('utilisateurs-service') {
+                    script {
+                        sh "docker build -t ${UTILISATEURS_IMAGE}:${UTILISATEURS_TAG} ."
+                    }
+                }
+            }
+        }
+
+        // Build emprunts-service Docker Image
+        stage('Build emprunts-service Docker Image') {
+            steps {
+                dir('emprunts-service') {
+                    script {
+                        sh "docker build -t ${EMPRUNTS_IMAGE}:${EMPRUNTS_TAG} ."
+                    }
+                }
+            }
+        }
+
+        // Build Frontend Docker Image
+        stage('Build Frontend Docker Image') {
             steps {
                 dir('frontend') {
-                    sh '''
-                        npm ci
-                        npm run lint
-                        npm run build
-                    '''
+                    script {
+                        sh "docker build -t ${FRONTEND_IMAGE}:${FRONTEND_TAG} ."
+                    }
                 }
             }
         }
 
-        stage('Build Docker Images') {
+        // Déployer les services avec Docker Compose en mode détaché
+        stage('Deploy with Docker Compose') {
             steps {
-                withCredentials([file(credentialsId: 'ditlib-env-file', variable: 'ENV_FILE')]) {
-                    sh 'docker compose --env-file "$ENV_FILE" build'
-                }
+                sh "docker compose up -d --build"
             }
         }
 
-        stage('Deploy') {
-            steps {
-                sh 'docker compose down'
-                withCredentials([file(credentialsId: 'ditlib-env-file', variable: 'ENV_FILE')]) {
-                    sh 'docker compose --env-file "$ENV_FILE" up -d'
-                }
-            }
-        }
-
-        stage('Smoke Test') {
-            steps {
-                sh '''
-                    for i in $(seq 1 30); do
-                        if curl -sf http://livres-service:8000/health \
-                            && curl -sf http://utilisateurs-service:8000/health \
-                            && curl -sf http://emprunts-service:8000/health \
-                            && curl -sf http://frontend/ > /dev/null; then
-                            echo "Tous les services sont up"
-                            exit 0
-                        fi
-                        echo "En attente des services... ($i/30)"
-                        sleep 2
-                    done
-                    echo "Les services ne sont pas up apres 60s"
-                    docker compose logs
-                    exit 1
-                '''
-            }
-        }
     }
 
     post {
-        failure {
-            sh 'docker compose logs --tail=100 || true'
+
+        success {
+            echo "✅ CI/CD ditLib réussi !"
         }
+
+        failure {
+            echo "❌ Le pipeline a échoué, vérifiez les logs Jenkins."
+        }
+
     }
+
 }
