@@ -34,7 +34,7 @@ def create_livre(livre: schemas.LivreCreate, db: Session = Depends(get_db)):
     if livre_existant:
         raise HTTPException(status_code=400, detail="Un livre avec cet ISBN existe deja")
 
-    # Au depart, tous les exemplaires sont disponibles
+    # Au depart, tous les exemplaires sont disponibles.
     nouveau_livre = models.Livre(
         titre=livre.titre,
         auteur=livre.auteur,
